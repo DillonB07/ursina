@@ -1,10 +1,12 @@
 from ursina import *
 from enum import Enum
 
+
+
 class ContentTypes:
     int = '0123456789'
-    float = int + '.,'
-    math = float + '+-*/'
+    float = f'{int}.,'
+    math = f'{float}+-*/'
 
 
 class InputField(Button):

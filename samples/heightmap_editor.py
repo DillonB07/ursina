@@ -15,7 +15,7 @@ cursor = Entity(model='sphere', color=color.azure, scale=1)
 # terrain = Mesh()
 
 vertices, triangles = list(), list()
-uvs = list()
+uvs = []
 # self.normals = list()
 w, h = 16,16
 # self.height_values = [[j/255 for j in i] for i in self.height_values]
@@ -49,7 +49,7 @@ for z in range(h):
 # terrain.model.colors = [color.black for v in terrain.model.vertices]
 terrain.model.generate()
 
-terrain.model.height_values =[[0 for x in range(w)] for y in range(h)]
+terrain.model.height_values = [[0 for _ in range(w)] for _ in range(h)]
 # from ursina.prefabs.first_person_controller import FirstPersonController
 
 ec = EditorCamera(rotation_smoothing=2, enabled=1, rotation=(30,30,0))
@@ -84,10 +84,11 @@ def update():
 
                 terrain.model.vertices = []
                 for z, column in enumerate(terrain.model.height_values):
-                    for x, row in enumerate(column):
-                        terrain.model.vertices.append(Vec3(x/w, terrain.model.height_values[x][z], z/h) + Vec3(centering_offset.x, 0, centering_offset.y))
-
-
+                    terrain.model.vertices.extend(
+                        Vec3(x / w, terrain.model.height_values[x][z], z / h)
+                        + Vec3(centering_offset.x, 0, centering_offset.y)
+                        for x, row in enumerate(column)
+                    )
 
                 terrain.model.generate()
 

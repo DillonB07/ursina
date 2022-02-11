@@ -35,7 +35,7 @@ class Animation(Sprite):
 
         self.frame_times = frame_times
         if not self.frame_times:
-            self.frame_times = [1/fps for i in range(len(self.frames))]
+            self.frame_times = [1/fps for _ in range(len(self.frames))]
 
         for i, frame in enumerate(self.frames):
             self.sequence.append(Func(setattr, self, 'texture', self.frames[i]))

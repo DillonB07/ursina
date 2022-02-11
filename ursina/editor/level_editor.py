@@ -27,11 +27,10 @@ class Scene(Entity):
                 pass
 
         print('saving:', self.name)
-        scene_file_content = dedent(f'''
-            class Scene(Entity):
-                def __init__(self, **kwargs):
-                    super().__init__(**kwargs)
-        ''')
+        scene_file_content = dedent(
+            '\x1f            class Scene(Entity):\x1f                def __init__(self, **kwargs):\x1f                    super().__init__(**kwargs)\x1f        '
+        )
+
 
         for e in self.entities:
             if hasattr(e, 'is_gizmo'):
@@ -54,7 +53,7 @@ class Scene(Entity):
                 scene_file_content += ')\n' # TODO: add if it has a custom name
 
         # print('scene_file_content:\n', scene_file_content)
-        self.path = level_editor.scene_folder/(self.name+'.py')
+        self.path = level_editor.scene_folder / f'{self.name}.py'
         with open(self.path, 'w', encoding='utf-8') as f:
             f.write(scene_file_content)
         print('saved:', self.path)
@@ -72,9 +71,9 @@ class Scene(Entity):
         t = perf_counter()
         with open(self.path) as f:
             try:
-                entities_before_exec = [e for e in scene.entities]
+                entities_before_exec = list(scene.entities)
                 exec(f.read())
-                self.scene_parent = eval(f'Scene()')
+                self.scene_parent = eval('Scene()')
                 self.scene_parent.name = self.name
                 self.entities = [e for e in scene.entities if e.has_ancestor(self.scene_parent) and not hasattr(e, 'is_gizmo')]
                 for e in self.entities:
@@ -91,7 +90,7 @@ class Scene(Entity):
 
             except Exception as e:
                 print('error in scene:', self.name, e)
-                [destroy(e) for e in scene.entities if not e in entities_before_exec]
+                [destroy(e) for e in scene.entities if e not in entities_before_exec]
 
         if self.scene_parent:
             print(f'loaded scene: "{self.name}" in {perf_counter()-t}')
@@ -124,7 +123,16 @@ class LevelEditor(Entity):
         self.ui = Entity(parent=camera.ui, name='level_editor.ui')
 
         self.point_renderer = Entity(parent=self, model=Mesh([], mode='point', thickness=.1, render_points_in_3d=True), texture='circle', always_on_top=True, unlit=True, render_queue=1)
-        self.cubes = [Entity(model='wireframe_cube', color=color.azure, parent=self, enabled=False) for i in range(128)] # max selection
+        self.cubes = [
+            Entity(
+                model='wireframe_cube',
+                color=color.azure,
+                parent=self,
+                enabled=False,
+            )
+            for _ in range(128)
+        ]
+
 
         self.origin_mode_menu = ButtonGroup(['last', 'center', 'individual'], min_selection=1, position=window.top, parent=self.ui)
         self.origin_mode_menu.scale *= .75
@@ -137,15 +145,11 @@ class LevelEditor(Entity):
 
     @property
     def entities(self):
-        if not self.current_scene:
-            return []
-        return self.current_scene.entities
+        return [] if not self.current_scene else self.current_scene.entities
 
     @property
     def selection(self):
-        if not self.current_scene:
-            return []
-        return self.current_scene.selection
+        return [] if not self.current_scene else self.current_scene.selection
 
     @selection.setter
     def selection(self, value):
@@ -177,19 +181,12 @@ class LevelEditor(Entity):
         # self.entity_list_text.text = '\n'.join(([f'{('', '<azure>')[int(e in self.selection)]}{e.name}    {e.selectable}<default>' for e in self.entities])
         text = ''
         for e in self.entities:
-            if e in self.selection:
-                text += '<azure>'
-            else:
-                text += '<default>'
-
-            if e:
-                text += f'{e.name}\n'
-            else:
-                text += f'ERROR: \n'
+            text += '<azure>' if e in self.selection else '<default>'
+            text += f'{e.name}\n' if e else 'ERROR: \n'
         self.entity_list_text.text = text
 
         for i, e in enumerate(self.entities):
-            if e == None:
+            if e is None:
                 print(f'error in entities {i}, is {e}')
                 self.entities.remove(e)
 
@@ -204,7 +201,10 @@ class LevelEditor(Entity):
             if self.origin_mode_menu.value in ('last', 'individual'):
                 gizmo.world_position = self.selection[-1].world_position
             elif self.origin_mode_menu.value == 'center':
-                gizmo.world_position = sum([e.world_position for e in self.selection]) / len(self.selection)
+                gizmo.world_position = sum(
+                    e.world_position for e in self.selection
+                ) / len(self.selection)
+
 
             if self.local_global_menu.value == 'local' and self.origin_mode_menu.value == 'last':
                 gizmo.world_rotation = self.selection[-1].world_rotation
@@ -213,7 +213,7 @@ class LevelEditor(Entity):
 
         [e.disable() for e in self.cubes]
         # [setattr(e, 'parent', self) for e in self.cubes]
-        for i, e in enumerate([e for e in self.selection if e.collider]):
+        for i, e in enumerate(e for e in self.selection if e.collider):
             if i < len(self.cubes):
                 self.cubes[i].world_transform = e.world_transform
                 self.cubes[i].origin = e.origin
@@ -291,7 +291,6 @@ class Undo(Entity):
                 level_editor.entities.insert(id, clone)
 
         elif current_undo_data[0] == 'restore entities': # restore entity
-            pass
             target_entities = [level_editor.entities[id] for id in current_undo_data[1]]
             [level_editor.selection.remove(e) for e in target_entities if e in level_editor.selection]
             [setattr(e, 'parent', level_editor) for e in level_editor.cubes]
@@ -366,9 +365,15 @@ class GizmoArrow(Draggable):
             )
 
         if self.record_undo and changed:
-            changes = []
-            for e in level_editor.selection:
-                changes.append([level_editor.entities.index(e), 'world_transform', e._original_world_transform, e.world_transform])
+            changes = [
+                [
+                    level_editor.entities.index(e),
+                    'world_transform',
+                    e._original_world_transform,
+                    e.world_transform,
+                ]
+                for e in level_editor.selection
+            ]
 
             level_editor.current_scene.undo.record_undo(changes)
 
@@ -409,7 +414,7 @@ class Gizmo(Entity):
             e.original_scale = e.scale
 
         self.fake_gizmo = Entity(parent=level_editor, enabled=False)
-        self.fake_gizmo.subgizmos = dict()
+        self.fake_gizmo.subgizmos = {}
         for key, value in self.subgizmos.items():
             self.fake_gizmo.subgizmos[key] = duplicate(self.subgizmos[key], parent=self.fake_gizmo, collider=None, ignore=True)
 
@@ -536,7 +541,7 @@ class RotationGizmo(Entity):
     def update(self):
         if self.dragging:
             rotation_amount = Vec3(sum(mouse.velocity), sum(mouse.velocity), sum(mouse.velocity)) * self.sensitivity * time.dt * self.axis * Vec3(1,1,-1)
-            if not level_editor.origin_mode_menu.value == 'individual':
+            if level_editor.origin_mode_menu.value != 'individual':
                 self.rotator.rotation -= rotation_amount
             else:
                 for e in level_editor.selection:
@@ -583,7 +588,7 @@ class ScaleGizmo(Draggable):
 
     def update(self):
         if self.dragging:
-            if not level_editor.origin_mode_menu.value == 'individual':
+            if level_editor.origin_mode_menu.value != 'individual':
                 self.scaler.scale += Vec3(sum(mouse.velocity), sum(mouse.velocity), sum(mouse.velocity)) * self.sensitivity * time.dt * self.axis
             else:
                 for e in level_editor.selection:
@@ -631,7 +636,7 @@ class BoxGizmo(Entity):
                 self.helper.world_scale = .05
 
                 level_editor.local_global_menu.original_value = level_editor.local_global_menu.value
-                if not level_editor.local_global_menu.value == 'local':
+                if level_editor.local_global_menu.value != 'local':
                     level_editor.local_global_menu.value = 'local'
 
                 level_editor.selection = [self.helper, ]
@@ -750,8 +755,8 @@ class QuickScaleOrRotate(Entity):
         if held_keys['control'] or held_keys['shift'] or held_keys['alt']:
             return
 
-        if held_keys['s'] and not key == 's':
-            key = 's' + key
+        if held_keys['s'] and key != 's':
+            key = f's{key}'
 
         if key in ('c',):
             self.original_gizmo_state = gizmo_toggler.animator.state
@@ -761,7 +766,7 @@ class QuickScaleOrRotate(Entity):
             self.original_gizmo_state = gizmo_toggler.animator.state
             gizmo_toggler.animator.state = 'e'
 
-            if not key == 's':
+            if key != 's':
                 scale_gizmo.axis = (Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1))[('sx', 'sy', 'sz').index(key)]
 
 
@@ -772,7 +777,7 @@ class QuickScaleOrRotate(Entity):
             gizmo.arrow_parent.visible = False
             scale_gizmo.visible = False
             self.gizmos_to_toggle[key].visible_self = False
-            if not key in ('sx', 'sy', 'sz'):
+            if key not in ('sx', 'sy', 'sz'):
                 self.clear_selection = not level_editor.selection
 
             if not level_editor.selection:
@@ -816,7 +821,11 @@ class Selector(Entity):
 
             clicked_entity = self.get_hovered_entity()
 
-            if clicked_entity in level_editor.entities and not clicked_entity in level_editor.selection and not held_keys['alt']:
+            if (
+                clicked_entity in level_editor.entities
+                and clicked_entity not in level_editor.selection
+                and not held_keys['alt']
+            ):
                 if held_keys['shift']:
                     level_editor.selection.append(clicked_entity) # append
                 else:
@@ -831,7 +840,7 @@ class Selector(Entity):
             level_editor.render_selection()
 
         if held_keys['control'] and key == 'a':
-            level_editor.selection = [e for e in level_editor.entities]
+            level_editor.selection = list(level_editor.entities)
             level_editor.render_selection()
 
         elif key == 'h':
@@ -867,7 +876,10 @@ class Selector(Entity):
 class SelectionBox(Entity):
     def input(self, key):
         if key == 'left mouse down':
-            if mouse.hovered_entity and not mouse.hovered_entity in level_editor.selection:
+            if (
+                mouse.hovered_entity
+                and mouse.hovered_entity not in level_editor.selection
+            ):
                 # print('-------', 'clicked on gizmo, dont box select')
                 return
             self.position = mouse.position
@@ -901,7 +913,10 @@ class SelectionBox(Entity):
 
                 pos = e.screen_position
                 if pos.x > self.x and pos.x < self.x + abs(self.scale_x) and pos.y > self.y and pos.y < self.y + abs(self.scale_y):
-                    if self.mode in ('add', 'new') and not e in level_editor.selection:
+                    if (
+                        self.mode in ('add', 'new')
+                        and e not in level_editor.selection
+                    ):
                         level_editor.selection.append(e)
                     elif self.mode == 'subtract' and e in level_editor.selection:
                         level_editor.selection.remove(e)
@@ -955,9 +970,8 @@ class Spawner(Entity):
 
 
     def update(self):
-        if mouse.world_point and self.target:
-            if held_keys['n'] or mouse.left:
-                self.target.position = mouse.world_point
+        if mouse.world_point and self.target and (held_keys['n'] or mouse.left):
+            self.target.position = mouse.world_point
 
 
 class Deleter(Entity):

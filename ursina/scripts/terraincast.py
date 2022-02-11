@@ -16,9 +16,9 @@ def terraincast(world_position, terrain_entity, height_values=None):    # uses x
     if height_values is None:
         height_values = terrain_entity.model.height_values
 
-    w, d = len(height_values), len(height_values[0])
-
     if pos.x >= 0 and pos.x < 1 and pos.z >= 0 and pos.z < 1:
+        w, d = len(height_values), len(height_values[0])
+
         pos *= Vec3(w, 0, d)
         helper.y = height_values[int(pos.x)][int(pos.z)]
         x, _, z = pos

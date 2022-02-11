@@ -12,7 +12,7 @@ def indentation(line):
 
 
 def get_module_attributes(str):
-    attrs = list()
+    attrs = []
 
     for l in str.split('\n'):
         if len(l) == 0:
@@ -25,7 +25,7 @@ def get_module_attributes(str):
 
 
 def get_classes(str):
-    classes = dict()
+    classes = {}
     for c in str.split('\nclass ')[1:]:
         class_name = c.split(':', 1)[0]
         if class_name.startswith(('\'', '"')):
@@ -37,7 +37,7 @@ def get_classes(str):
 
 
 def get_class_attributes(str):
-    attributes = list()
+    attributes = []
     lines = str.split('\n')
     start = 0
     end = len(lines)
@@ -51,7 +51,7 @@ def get_class_attributes(str):
                 break
 
             start = i
-            for j in range(i+1, len(lines)):
+            for j in range(start + 1, len(lines)):
                 if (indentation(lines[j]) == indentation(line)
                 and not lines[j].strip().startswith('def late_init')
                 ):
@@ -75,17 +75,20 @@ def get_class_attributes(str):
             if i < len(init_section) and indentation(init_section[i+1]) > indentation(line):
                 # value = 'multiline'
                 start = i
-                end = i
                 indent = indentation(line)
-                for j in range(i+1, len(init_section)):
-                    if indentation(init_section[j]) <= indent:
-                        end = j
-                        break
+                end = next(
+                    (
+                        j
+                        for j in range(end + 1, len(init_section))
+                        if indentation(init_section[j]) <= indent
+                    ),
+                    i,
+                )
 
                 for l in init_section[start+1:end]:
                     value += '\n' + l[4:]
 
-            attributes.append(key + ' = ' + value)
+            attributes.append(f'{key} = {value}')
 
     if '@property' in code:
         for i, line in enumerate(lines):
@@ -96,17 +99,17 @@ def get_class_attributes(str):
                 if '#' in lines[i+1]:
                     name += ((20-len(name)) * ' ') + '<gray>#' + lines[i+1].split('#',1)[1] + '</gray>'
 
-                if not name in [e.split(' = ')[0] for e in attributes]:
+                if name not in [e.split(' = ')[0] for e in attributes]:
                     attributes.append(name)
 
     return attributes
 
 
 def get_functions(str, is_class=False):
-    functions = dict()
+    functions = {}
     lines = str.split('\n')
 
-    functions = list()
+    functions = []
     lines = str.split('\n')
     ignore_functions_for_property_generation = 'generate_properties(' in str
 
@@ -122,19 +125,17 @@ def get_functions(str, is_class=False):
             if name.startswith('_') or lines[i-1].strip().startswith('@'):
                 continue
 
-            if ignore_functions_for_property_generation:
-                if name.startswith('get_') or name.startswith('set_'):
-                    continue
+            if ignore_functions_for_property_generation and (
+                name.startswith('get_') or name.startswith('set_')
+            ):
+                continue
 
 
             params = line.replace('(self, ', '(')
             params = params.replace('(self)', '()')
             params = params.split('(', 1)[1].rsplit(')', 1)[0]
 
-            comment = ''
-            if '#' in line:
-                comment = '#' + line.split('#')[1]
-
+            comment = f'#{line.split("#")[1]}' if '#' in line else ''
             functions.append((name, params, comment))
 
     return functions
@@ -149,7 +150,7 @@ def clear_tags(str):
 
 def get_example(str, name=None):    # use name to highlight the relevant class
     key = '''if __name__ == '__main__':'''
-    lines = list()
+    lines = []
     example_started = False
     for l in str.split('\n'):
         if example_started:
@@ -166,10 +167,15 @@ def get_example(str, name=None):    # use name to highlight the relevant class
         ignore = ()
 
 
-    lines = [e for e in example.split('\n') if not e in ignore and not e.strip().startswith('#')]
+    lines = [
+        e
+        for e in example.split('\n')
+        if e not in ignore and not e.strip().startswith('#')
+    ]
+
 
     import re
-    styled_lines = list()
+    styled_lines = []
 
     for line in lines:
         line = line.replace('def ', '<purple>def</purple> ')
@@ -204,8 +210,8 @@ def get_example(str, name=None):    # use name to highlight the relevant class
             line = line.replace(f'{i}', f'<yellow>{i}</yellow>')
 
         # destyle Vec2 and Vec3
-        line = line.replace(f'<yellow>3</yellow>(', '3(')
-        line = line.replace(f'<yellow>2</yellow>(', '2(')
+        line = line.replace('<yellow>3</yellow>(', '3(')
+        line = line.replace('<yellow>2</yellow>(', '2(')
 
         # highlight class name
         if name:

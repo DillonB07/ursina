@@ -5,19 +5,16 @@ from ursina import string_utilities
 
 paused = False
 time_scale = 1
-sequences = list()
+sequences = []
 trace_entity_definition = False # enable to set entity.line_definition
 print_entity_definition = False
 
 package_folder = Path(__file__).parent
 asset_folder = Path(sys.argv[0]).parent
-blender_paths = dict()
+blender_paths = {}
 
-development_mode = True
 dirs = [e.stem for e in asset_folder.parent.iterdir() if e.is_dir()]
-if 'src' in dirs and 'python' in dirs:
-    development_mode = False
-
+development_mode = 'src' not in dirs or 'python' not in dirs
 print_info = development_mode
 print_warnings = True
 raise_exception_on_missing_model = False

@@ -58,9 +58,10 @@ class AssetMenu(ButtonList):
 
     def input(self, key):
         super().input(key)
-        if key == 'left mouse down':
-            if not mouse.hovered_entity or not mouse.hovered_entity.has_ancestor(self):
-                self.enabled = False
+        if key == 'left mouse down' and (
+            not mouse.hovered_entity or not mouse.hovered_entity.has_ancestor(self)
+        ):
+            self.enabled = False
 
 
 class SelectionBox(Entity):
@@ -95,7 +96,10 @@ class SelectionBox(Entity):
 
                 pos = icon.screen_position
                 if pos.x > self.x and pos.x < self.x + abs(self.scale_x) and pos.y > self.y and pos.y < self.y + abs(self.scale_y):
-                    if self.mode != 'subtract' and not icon in self.scene_editor.selection:
+                    if (
+                        self.mode != 'subtract'
+                        and icon not in self.scene_editor.selection
+                    ):
                         self.scene_editor.selection.append(icon)
 
                     elif icon in self.scene_editor.selection:
@@ -203,9 +207,18 @@ class SceneEditor(Entity):
 
 
         if undo_data is None:
-            undo_data = dict()
-            for name in ('name', 'world_position', 'rotation', 'scale', 'model', 'color', 'texture'):
-                undo_data[name] = [getattr(icon.entity, name) for icon in self.editor_icons]
+            undo_data = {
+                name: [getattr(icon.entity, name) for icon in self.editor_icons]
+                for name in (
+                    'name',
+                    'world_position',
+                    'rotation',
+                    'scale',
+                    'model',
+                    'color',
+                    'texture',
+                )
+            }
 
             undo_data['cursor_3d_position'] = self.cursor_3d.position
 
@@ -223,8 +236,8 @@ class SceneEditor(Entity):
         with open(folder / f'{name}.py') as f:
             try:
                 exec(f.read())
-                scene_instance = eval(f'Scene()')
-                # entities = [e for e in scene.entities if e.has_ancestor(scene_instance)]
+                scene_instance = eval('Scene()')
+                        # entities = [e for e in scene.entities if e.has_ancestor(scene_instance)]
             except:
                 print('error in scene:', name)
 

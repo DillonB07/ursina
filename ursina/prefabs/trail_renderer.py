@@ -4,14 +4,17 @@ class TrailRenderer(Entity):
     def __init__(self, thickness=10, color=color.white, end_color=color.clear, length=6, **kwargs):
         super().__init__(**kwargs)
         self.renderer = Entity(
-            model = Mesh(
-            vertices=[self.world_position for i in range(length)],
-            colors=[lerp(end_color, color, i/length*2) for i in range(length)],
-            mode='line',
-            thickness=thickness,
-            static=False
+            model=Mesh(
+                vertices=[self.world_position for _ in range(length)],
+                colors=[
+                    lerp(end_color, color, i / length * 2) for i in range(length)
+                ],
+                mode='line',
+                thickness=thickness,
+                static=False,
             )
         )
+
         self._t = 0
         self.update_step = .025
 

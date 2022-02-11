@@ -17,13 +17,12 @@ class Pipe(Mesh):
         b.look_at(path[1])
         e = duplicate(b)
 
-        verts = list()
+        verts = []
 
         # cap start
         if cap_ends:
             for i in range(len(b.children)):
-                verts.append(path[0])
-                verts.append(b.children[i].world_position)
+                verts.extend((path[0], b.children[i].world_position))
                 if i >= len(b.children)-1:
                     verts.append(b.children[0].world_position)
                 else:
@@ -52,13 +51,16 @@ class Pipe(Mesh):
                 n = j+1
                 if j == len(e.children)-1:
                     n = 0
-                verts.append(e.children[j].world_position)
-                verts.append(b.children[n].world_position)
-                verts.append(b.children[j].world_position)
-
-                verts.append(e.children[n].world_position)
-                verts.append(b.children[n].world_position)
-                verts.append(e.children[j].world_position)
+                verts.extend(
+                    (
+                        e.children[j].world_position,
+                        b.children[n].world_position,
+                        b.children[j].world_position,
+                        e.children[n].world_position,
+                        b.children[n].world_position,
+                        e.children[j].world_position,
+                    )
+                )
 
         # cap end
         if cap_ends:
@@ -67,10 +69,7 @@ class Pipe(Mesh):
                     verts.append(e.children[0].world_position)
                 else:
                     verts.append(e.children[i+1].world_position)
-                verts.append(e.children[i].world_position)
-                verts.append(path[-1])
-
-
+                verts.extend((e.children[i].world_position, path[-1]))
         super().__init__(vertices=verts, mode=mode, **kwargs)
         destroy(b)
         destroy(e)
