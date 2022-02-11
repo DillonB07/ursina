@@ -15,11 +15,7 @@ class Color(Vec4):
 
     @property
     def name(self):
-        for key, value in colors.items():
-            if value == self:
-                return key
-
-        return None
+        return next((key for key, value in colors.items() if value == self), None)
 
     @property
     def r(self):
@@ -159,11 +155,7 @@ for i in range(256):
 color_names = ('white', 'smoke', 'light_gray', 'gray', 'dark_gray', 'black',
     'red', 'orange', 'yellow', 'lime', 'green', 'turquoise', 'cyan', 'azure',
     'blue', 'violet', 'magenta', 'pink', 'brown', 'olive', 'peach', 'gold', 'salmon')
-colors = dict()
-for cn in color_names:
-    colors[cn] = getattr(sys.modules[__name__], cn)
-
-
+colors = {cn: getattr(sys.modules[__name__], cn) for cn in color_names}
 if __name__ == '__main__':
     from ursina import *
     app = Ursina()
@@ -180,7 +172,7 @@ if __name__ == '__main__':
     grid_layout(p.children, max_x=8)
 
     for name in ('r', 'g', 'b', 'h', 's', 'v', 'brightness'):
-        print(name + ':', getattr(color.random_color(), name))
+        print(f'{name}:', getattr(color.random_color(), name))
 
     e = Entity(model='cube', color=color.lime)
     print(e.color.name)

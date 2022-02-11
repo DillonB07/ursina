@@ -2,12 +2,12 @@ from ursina import *
 import numpy as np
 
 number_of_particles = 100   # keep this as low as possible
-points = np.array([Vec3(0,0,0) for i in range(number_of_particles)])
+points = np.array([Vec3(0,0,0) for _ in range(number_of_particles)])
 directions = np.array([Vec3(random.random()-.5,random.random()-.5,random.random()-.5)*.05 for i in range(number_of_particles)])
 frames = []
 
 # simulate the particles once and cache the positions in a list.
-for i in range(60*1):
+for _ in range(60*1):
     points += directions
     frames.append(copy(points))
 

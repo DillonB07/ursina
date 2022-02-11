@@ -96,13 +96,15 @@ class FileBrowser(Entity):
 
 
     def input(self, key):
-        if key == 'scroll down':
-            if self.scroll + self.max_buttons < len(self.button_parent.children)-1:
-                self.scroll += 1
+        if (
+            key == 'scroll down'
+            and self.scroll + self.max_buttons
+            < len(self.button_parent.children) - 1
+        ):
+            self.scroll += 1
 
-        if key == 'scroll up':
-            if self.scroll > 0:
-                self.scroll -= 1
+        if key == 'scroll up' and self.scroll > 0:
+            self.scroll -= 1
 
 
     @property
@@ -114,11 +116,7 @@ class FileBrowser(Entity):
         self._scroll = value
 
         for i, c in enumerate(self.button_parent.children):
-            if i < value or i > value + self.max_buttons:
-                c.enabled = False
-            else:
-                c.enabled = True
-
+            c.enabled = i >= value and i <= value + self.max_buttons
         self.button_parent.y = value * .025
         self.can_scroll_up_indicator.enabled = value > 0
         self.can_scroll_down_indicator.enabled = value + self.max_buttons + 1 != len(self.button_parent.children)
@@ -137,12 +135,12 @@ class FileBrowser(Entity):
         files = [e for e in value.iterdir() if e.is_dir() or e.suffix in self.file_types or '.*' in self.file_types]
         files.sort(key=lambda x : x.is_file())  # directories first
 
-        for i in range(len(self.button_parent.children) - len(files)):
+        for _ in range(len(self.button_parent.children) - len(files)):
             destroy(self.button_parent.children.pop())
 
 
+        prefix = ' <light_gray>'
         for i, f in enumerate(files):
-            prefix = ' <light_gray>'
             # if f.is_dir():
             #     prefix = '<gray> <image:folder>   <light_gray>'
             # else:

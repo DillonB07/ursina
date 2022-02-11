@@ -9,7 +9,7 @@ terrain = Entity(model=Terrain('grass_fields_heightmap', skip=8), texture='grass
 
 
 # grid = [[[None for z in range(8)] for y in range(1)] for x in range(8)] # make 2d array of entities
-grid = [[None for z in range(8)] for x in range(8)] # make 2d array of entities
+grid = [[None for _ in range(8)] for _ in range(8)]
 
 x_slices = 8
 # y = 1

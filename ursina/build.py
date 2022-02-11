@@ -85,11 +85,11 @@ for i, arg in enumerate(sys.argv):
             ignore.append(sys.argv[j])
             print('ignoring', sys.argv[j])
 
-    elif arg == '--name':
-        project_name = sys.argv[i+1]
-
     elif arg == '--include_modules':
         include_modules = sys.argv[i+1].split(',')
+
+    elif arg == '--name':
+        project_name = sys.argv[i+1]
 
     elif arg == '--skip_engine':
         build_engine = False
@@ -97,18 +97,23 @@ for i, arg in enumerate(sys.argv):
         build_game = False
 
 
-if (build_engine and python_dest.exists() or (build_game and src_dest.exists())):
-    if not '--overwrite' in sys.argv:
-        for e in (python_dest, src_dest):
-            msg = f'Folder {e} already exists. \nProceed to delete and overwrite?'
-            overwrite = input("%s (y/N) " % msg).lower() == 'y'
-            # if not overwrite:
-            #     print('stopped building')
-            #     exit()
-            if e == python_dest:
-                build_engine = overwrite
-            elif e == src_dest:
-                build_game = overwrite
+if (
+    (
+        build_engine
+        and python_dest.exists()
+        or (build_game and src_dest.exists())
+    )
+) and '--overwrite' not in sys.argv:
+    for e in (python_dest, src_dest):
+        msg = f'Folder {e} already exists. \nProceed to delete and overwrite?'
+        overwrite = input("%s (y/N) " % msg).lower() == 'y'
+        # if not overwrite:
+        #     print('stopped building')
+        #     exit()
+        if e == python_dest:
+            build_engine = overwrite
+        elif e == src_dest:
+            build_game = overwrite
 
 
 print('building project:', project_folder)
@@ -230,18 +235,17 @@ if build_game:
     src_dest.mkdir()
 
     ignore.extend(['.git', 'build', '.gitignore', 'build.bat'])
-    ignore_patterns = ['.psd', '.zip']
-    compile_to_pyc = True
     ignore.append('__pycache__')
 
-    if compile_to_pyc:
+    ignore_patterns = ['.psd', '.zip']
+    if compile_to_pyc := True:
         import py_compile
         for f in project_folder.glob('**/*.py'):
             if '\\build\\' in str(f):
                 continue
 
             print('compiling:', f, src_dest / str(f)[len(str(project_folder))+1:])
-            py_compile.compile(f, src_dest / (str(f)[len(str(project_folder))+1:]+'c'))
+            py_compile.compile(f, src_dest / f'{str(f)[len(str(project_folder))+1:]}c')
 
         ignore_patterns.append('.py')
 
@@ -265,9 +269,7 @@ if build_game:
 
 
     print('creating .bat file')
-    c = ''
-    if compile:
-        c = 'c'
+    c = 'c' if compile else ''
     with Path(build_folder / f'{project_name}.bat').open('w') as f:
         f.write(dedent(fr'''
             chcp 65001

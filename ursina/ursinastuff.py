@@ -103,8 +103,7 @@ def _destroy(entity, force_destroy=False):
 def find_sequence(name, file_types, folders): # find frame_0, frame_1, frame_2 and so on
     for folder in folders:
         for file_type in file_types:
-            files = list(folder.glob(f'**/{name}*.{file_type}'))
-            if files:
+            if files := list(folder.glob(f'**/{name}*.{file_type}')):
                 files.sort()
                 return files
     return []
@@ -115,9 +114,9 @@ def import_all_classes(path=application.asset_folder, debug=False):
     sys.path.append(path)
     from ursina.string_utilities import snake_to_camel
     from glob import iglob
-    imported_successfully = list()
+    imported_successfully = []
 
-    for file_path in iglob(path + '**/*.py', recursive=True):
+    for file_path in iglob(f'{path}**/*.py', recursive=True):
         if '\\build\\' in file_path or '__' in file_path:
             continue
 
@@ -127,7 +126,7 @@ def import_all_classes(path=application.asset_folder, debug=False):
         module_name = os.path.basename(file_path).split('.')[0]
         class_name = snake_to_camel(module_name)
         module_name = module_name
-        import_statement = 'from ' + rel_path + ' import *'
+        import_statement = f'from {rel_path} import *'
 
         try:
             exec(import_statement, globals())
@@ -137,8 +136,6 @@ def import_all_classes(path=application.asset_folder, debug=False):
         except:
             if debug:
                 print('     x', import_statement)
-            pass
-
     return imported_successfully
 
 

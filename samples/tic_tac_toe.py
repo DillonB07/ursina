@@ -15,7 +15,7 @@ bg = Entity(parent=scene, model='quad', texture='shore', scale=(16,8), z=10, col
 mouse.visible = False
 
 # create a matrix to store the buttons in. makes it easier to check for victory
-board = [[None for x in range(3)] for y in range(3)]
+board = [[None for _ in range(3)] for y in range(3)]
 
 for y in range(3):
     for x in range(3):
@@ -44,17 +44,48 @@ for y in range(3):
 def check_for_victory():
     name = player.name
 
-    won = (
-    (board[0][0].text == name and board[1][0].text == name and board[2][0].text == name) or # across the bottom
-    (board[0][1].text == name and board[1][1].text == name and board[2][1].text == name) or # across the middle
-    (board[0][2].text == name and board[1][2].text == name and board[2][2].text == name) or # across the top
-    (board[0][0].text == name and board[0][1].text == name and board[0][2].text == name) or # down the left side
-    (board[1][0].text == name and board[1][1].text == name and board[1][2].text == name) or # down the middle
-    (board[2][0].text == name and board[2][1].text == name and board[2][2].text == name) or # down the right side
-    (board[0][0].text == name and board[1][1].text == name and board[2][2].text == name) or # diagonal /
-    (board[0][2].text == name and board[1][1].text == name and board[2][0].text == name))   # diagonal \
-
-    if won:
+    if won := (
+        (
+            board[0][0].text == name
+            and board[1][0].text == name
+            and board[2][0].text == name
+        )
+        or (  # across the bottom
+            board[0][1].text == name
+            and board[1][1].text == name
+            and board[2][1].text == name
+        )
+        or (  # across the middle
+            board[0][2].text == name
+            and board[1][2].text == name
+            and board[2][2].text == name
+        )
+        or (  # across the top
+            board[0][0].text == name
+            and board[0][1].text == name
+            and board[0][2].text == name
+        )
+        or (  # down the left side
+            board[1][0].text == name
+            and board[1][1].text == name
+            and board[1][2].text == name
+        )
+        or (  # down the middle
+            board[2][0].text == name
+            and board[2][1].text == name
+            and board[2][2].text == name
+        )
+        or (  # down the right side
+            board[0][0].text == name
+            and board[1][1].text == name
+            and board[2][2].text == name
+        )
+        or (  # diagonal /
+            board[0][2].text == name
+            and board[1][1].text == name
+            and board[2][0].text == name
+        )
+    ):
         print('winner is:', name)
         destroy(cursor)
         mouse.visible = True

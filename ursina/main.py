@@ -191,9 +191,8 @@ class Ursina(ShowBase):
 
         try: input_handler.input(key)
         except: pass
-        if not application.paused:
-            if hasattr(__main__, 'input'):
-                __main__.input(key)
+        if not application.paused and hasattr(__main__, 'input'):
+            __main__.input(key)
 
 
         for entity in scene.entities:
@@ -236,17 +235,16 @@ class Ursina(ShowBase):
     def keystroke(self, key):
         key = str(KeyboardButton.asciiKey(key))
 
-        if key == None:
+        if key is None:
             return
         if key == 'space':
             key = ' '
         if len(key) != 1:
             return
 
-        if not application.paused:
-            if hasattr(__main__, 'keystroke'):
-                __main__.keystroke(key)
-        
+        if not application.paused and hasattr(__main__, 'keystroke'):
+            __main__.keystroke(key)
+
         for entity in scene.entities:
             if entity.enabled == False or entity.ignore or entity.ignore_input:
                 continue

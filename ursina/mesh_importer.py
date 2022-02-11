@@ -12,7 +12,7 @@ from ursina.string_utilities import print_info, print_warning
 from ursina import color
 
 imported_meshes = dict()
-blender_scenes = dict()
+blender_scenes = {}
 
 def load_model(name, path=application.asset_folder, file_types=('.bam', '.ursinamesh', '.obj', '.glb', '.gltf', '.blend'), use_deepcopy=False):
     if not isinstance(name, str):
@@ -21,7 +21,7 @@ def load_model(name, path=application.asset_folder, file_types=('.bam', '.ursina
     if '.' in name:
         full_name = name
         name = full_name.split('.')[0]
-        file_types = ('.' + full_name.split('.',1)[1],)
+        file_types = (f'.{full_name.split(".",1)[1]}', )
 
     if name in imported_meshes:
         # print('load cached model', name)
@@ -104,7 +104,7 @@ if application.development_mode:
         except:
             pass
 
-    elif platform.system() == 'Linux' or platform.system() == 'Darwin':
+    elif platform.system() in ['Linux', 'Darwin']:
         # Use "which" command to find blender
         which_process = subprocess.run(('which', 'blender'), stdout=subprocess.PIPE)
         if which_process.returncode == 0:
@@ -169,7 +169,10 @@ def get_blender(blend_file):    # try to get a matching blender version in case 
     with open(blend_file, 'rb') as f:
         try:
             blender_version_number = (f.read(12).decode("utf-8"))[-3:]   # get version from start of .blend file e.g. 'BLENDER-v280'
-            blender_version_number = blender_version_number[0] + '.' + blender_version_number[1:2]
+            blender_version_number = (
+                f'{blender_version_number[0]}.{blender_version_number[1:2]}'
+            )
+
             print_info('blender_version:', blender_version_number)
             if blender_version_number in application.blender_paths:
                 return application.blender_paths[blender_version_number]
@@ -187,12 +190,12 @@ def compress_models(path=None, outpath=application.compressed_models_folder, nam
         application.compressed_models_folder.mkdir()
 
     export_script_path = application.internal_scripts_folder / '_blend_export.py'
-    exported = list()
+    exported = []
 
     for blend_file in path.glob(f'**/{name}.blend'):
         blender = get_blender(blend_file)
 
-        out_file_path = outpath / (blend_file.stem + '.obj')
+        out_file_path = outpath / f'{blend_file.stem}.obj'
         print_info('converting .blend file to .obj:', blend_file, '-->', out_file_path, 'using:', blender)
 
         if platform.system() == 'Windows':
@@ -267,18 +270,18 @@ def obj_to_ursinamesh(
                 if len(tri) == 3:
                     tris.extend(tri)
                     if current_color:
-                        vertex_colors.extend([current_color for i in range(3)])
+                        vertex_colors.extend([current_color for _ in range(3)])
 
                 elif len(tri) == 4:
                     tris.extend((tri[0], tri[1], tri[2], tri[2], tri[3], tri[0]))
                     if current_color:
-                        vertex_colors.extend([current_color for i in range(6)])
+                        vertex_colors.extend([current_color for _ in range(6)])
 
                 else: # ngon
                     for i in range(1, len(tri)-1):
                         tris.extend((tri[i], tri[i+1], tri[0]))
                     if current_color:
-                        vertex_colors.extend([current_color for i in range(len(tri))])
+                        vertex_colors.extend([current_color for _ in range(len(tri))])
 
                 try:
                     uv = tuple(int(t.split('/')[1])-1 for t in l)
@@ -338,15 +341,13 @@ def obj_to_ursinamesh(
                 colors=vertex_colors
             )
 
-        meshstring = ''
-        meshstring += 'Mesh('
-
+        meshstring = '' + 'Mesh('
         meshstring += '\nvertices='
         meshstring += str(tuple(verts[t] for t in tris))
 
         if vertex_colors:
             meshstring += '\ncolors='
-            meshstring += str(tuple(col for col in vertex_colors))
+            meshstring += str(tuple(vertex_colors))
 
         if uv_indices:
             meshstring += ', \nuvs='
@@ -361,7 +362,7 @@ def obj_to_ursinamesh(
         if not save_to_file:
             return meshstring
 
-        outfilepath = outpath / (os.path.splitext(f)[0] + '.ursinamesh')
+        outfilepath = outpath / f'{os.path.splitext(f)[0]}.ursinamesh'
         with open(outfilepath, 'w') as file:
             file.write(meshstring)
 
@@ -383,7 +384,7 @@ def compress_models_fast(model_name=None, write_to_disk=False):
         if f.endswith('.blend'):
             # print('f:', application.compressed_models_folder + '/' + f)
             print('compress______', f)
-            blend = BlenderFile(application.models_folder + '/' + f)
+            blend = BlenderFile(f'{application.models_folder}/{f}')
             number_of_objects = len(blend.list('Object'))
 
             for o in blend.list('Object'):
@@ -406,12 +407,9 @@ def compress_models_fast(model_name=None, write_to_disk=False):
                 print(file_path)
 
                 tris = tuple(triindex.v for triindex in o.data.mloop)
-                flippedtris = list()
+                flippedtris = []
                 for i in range(0, len(tris)-3, 3):
-                    flippedtris.append(tris[i+2])
-                    flippedtris.append(tris[i+1])
-                    flippedtris.append(tris[i+0])
-
+                    flippedtris.extend((tris[i+2], tris[i+1], tris[i+0]))
                 file_content += ', triangles=' + str(flippedtris)
 
                 if o.data.mloopuv:
